@@ -28,4 +28,19 @@ pool/main/
 
 ## Estado
 
-El repositorio esta creado y listo para GitHub Pages. El catalogo inicial esta vacio hasta publicar los primeros `.deb` reconstruidos para Kembriq Runtime.
+El repositorio esta publicado por GitHub Pages. Para generar paquetes reales, ejecutar manualmente el workflow:
+
+```txt
+Build Kembriq Runtime
+```
+
+Sets recomendados:
+
+```txt
+base        -> bootstrap con apt/dpkg/shell/coreutils para instalar runtime inicial
+git-python  -> git, python, pip y venv para pruebas de agente
+node        -> nodejs-lts para npm/run/preview
+all         -> set inicial completo curado
+```
+
+El primer objetivo para probar en celular es `base`. Despues de instalar ese bootstrap, la app puede probar `apt update` contra este repo y luego instalar `git-python` o `node`.

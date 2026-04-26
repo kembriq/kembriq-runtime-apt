@@ -1,0 +1,172 @@
+name: Build Kembriq Runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_set:
+        description: "Package set to build"
+        required: true
+        type: choice
+        default: base
+        options:
+          - base
+          - git-python
+          - node
+          - all
+          - custom
+      packages:
+        description: "Space-separated packages when package_set=custom"
+        required: false
+        default: ""
+      build_bootstrap:
+        description: "Build kembriq-runtime-base bootstrap zip"
+        required: true
+        type: boolean
+        default: true
+      publish_pages:
+        description: "Commit built .deb files and APT metadata to GitHub Pages"
+        required: true
+        type: boolean
+        default: true
+      fail_on_termux_refs:
+        description: "Fail if artifacts contain com.termux or /data/data/com.termux"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kembriq-runtime-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-aarch64:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout APT repo
+        uses: actions/checkout@v4
+        with:
+          path: apt-repo
+
+      - name: Prepare host
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y arj binutils curl dpkg-dev git jq python3 unzip xz-utils zip zstd
+          sudo rm -rf /usr/local/lib/android /opt/hostedtoolcache/CodeQL /opt/ghc || true
+          df -h
+
+      - name: Clone termux-packages
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/termux/termux-packages.git termux-packages
+
+      - name: Patch termux-packages for Kembriq
+        run: |
+          set -euo pipefail
+          chmod +x apt-repo/scripts/*.sh
+          apt-repo/scripts/patch-termux-for-kembriq.sh termux-packages
+          grep -n 'TERMUX_APP__PACKAGE_NAME=' termux-packages/scripts/properties.sh
+          grep -n 'TERMUX__ROOTFS=' termux-packages/scripts/properties.sh
+
+      - name: Resolve package set
+        id: packages
+        env:
+          PACKAGE_SET: ${{ inputs.package_set }}
+          CUSTOM_PACKAGES: ${{ inputs.packages }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_SET" in
+            base)
+              packages=""
+              ;;
+            git-python)
+              packages="git python python-pip python-venv"
+              ;;
+            node)
+              packages="nodejs-lts"
+              ;;
+            all)
+              packages="git python python-pip python-venv nodejs-lts curl wget tar gzip unzip ripgrep fd jq"
+              ;;
+            custom)
+              packages="$CUSTOM_PACKAGES"
+              ;;
+            *)
+              echo "Unknown package_set: $PACKAGE_SET" >&2
+              exit 64
+              ;;
+          esac
+          echo "packages=$packages" >> "$GITHUB_OUTPUT"
+          echo "Resolved packages: ${packages:-<bootstrap base only>}"
+
+      - name: Build bootstrap base
+        if: ${{ inputs.build_bootstrap }}
+        run: |
+          set -euo pipefail
+          cd termux-packages
+          ./scripts/run-docker.sh ./scripts/build-bootstraps.sh --architectures aarch64 -f
+
+      - name: Build selected packages
+        if: ${{ steps.packages.outputs.packages != '' }}
+        run: |
+          set -euo pipefail
+          cd termux-packages
+          read -r -a packages <<< "${{ steps.packages.outputs.packages }}"
+          ./scripts/run-docker.sh ./build-package.sh -f -a aarch64 "${packages[@]}"
+
+      - name: Scan Kembriq artifacts
+        if: ${{ inputs.fail_on_termux_refs }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          artifacts=(termux-packages/output/*.deb)
+          if [ -f termux-packages/bootstrap-aarch64.zip ]; then
+            artifacts+=(termux-packages/bootstrap-aarch64.zip)
+          fi
+          if [ "${#artifacts[@]}" -eq 0 ]; then
+            echo "No artifacts to scan." >&2
+            exit 1
+          fi
+          apt-repo/scripts/scan-kembriq-artifacts.sh "${artifacts[@]}"
+
+      - name: Publish APT pages content
+        if: ${{ inputs.publish_pages }}
+        run: |
+          set -euo pipefail
+          bootstrap=""
+          if [ -f termux-packages/bootstrap-aarch64.zip ]; then
+            bootstrap="$(realpath termux-packages/bootstrap-aarch64.zip)"
+          fi
+          apt-repo/scripts/publish-apt-pages.sh apt-repo termux-packages/output "$bootstrap"
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kembriq-runtime-aarch64-${{ github.run_id }}
+          path: |
+            termux-packages/output/*.deb
+            termux-packages/bootstrap-aarch64.zip
+            apt-repo/dists/stable/main/binary-aarch64/Packages
+            apt-repo/dists/stable/Release
+          if-no-files-found: ignore
+
+      - name: Commit published repo
+        if: ${{ inputs.publish_pages }}
+        working-directory: apt-repo
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dists pool artifacts README.md .nojekyll scripts .github
+          if git diff --cached --quiet; then
+            echo "No APT repo changes to commit."
+          else
+            git commit -m "Publish Kembriq runtime packages"
+            git push
+          fi
