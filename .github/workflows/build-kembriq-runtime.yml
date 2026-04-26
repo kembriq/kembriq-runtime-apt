@@ -109,7 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           cd termux-packages
-          ./scripts/run-docker.sh ./scripts/build-bootstraps.sh --architectures aarch64 -f
+          ./scripts/run-docker.sh ./scripts/build-bootstraps.sh --architectures aarch64
 
       - name: Build selected packages
         if: ${{ steps.packages.outputs.packages != '' }}
