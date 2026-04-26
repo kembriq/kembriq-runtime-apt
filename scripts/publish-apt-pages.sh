@@ -26,7 +26,24 @@ fi
 
 if [ -n "$bootstrap_zip" ] && [ -f "$bootstrap_zip" ]; then
   cp -f "$bootstrap_zip" "$bootstrap_dir/kembriq-runtime-base-aarch64.zip"
-  sha256sum "$bootstrap_dir/kembriq-runtime-base-aarch64.zip" > "$bootstrap_dir/kembriq-runtime-base-aarch64.zip.sha256"
+  bootstrap_sha256="$(sha256sum "$bootstrap_dir/kembriq-runtime-base-aarch64.zip" | awk '{print $1}')"
+  bootstrap_size="$(stat -c%s "$bootstrap_dir/kembriq-runtime-base-aarch64.zip")"
+  bootstrap_version="$(date -u +%Y.%m.%d.%H%M%S)"
+  echo "$bootstrap_sha256  kembriq-runtime-base-aarch64.zip" > "$bootstrap_dir/kembriq-runtime-base-aarch64.zip.sha256"
+  cat > "$bootstrap_dir/kembriq-runtime-base-aarch64.json" <<EOF
+{
+  "id": "kembriq-runtime-base",
+  "version": "$bootstrap_version",
+  "abi": "arm64-v8a",
+  "packageName": "com.kembriq.code",
+  "prefix": "/data/data/com.kembriq.code/files/usr",
+  "format": "termux-bootstrap-zip",
+  "url": "https://kembriq.github.io/kembriq-runtime-apt/artifacts/bootstrap/kembriq-runtime-base-aarch64.zip",
+  "sha256": "$bootstrap_sha256",
+  "sizeBytes": $bootstrap_size,
+  "expectedFiles": ["bin/apt", "bin/dpkg", "bin/bash"]
+}
+EOF
 fi
 
 (

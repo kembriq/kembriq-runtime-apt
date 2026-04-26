@@ -157,6 +157,9 @@ jobs:
           if [ -f termux-packages/bootstrap-aarch64.zip ]; then
             cp termux-packages/bootstrap-aarch64.zip upload/
           fi
+          if [ -f apt-repo/artifacts/bootstrap/kembriq-runtime-base-aarch64.json ]; then
+            cp apt-repo/artifacts/bootstrap/kembriq-runtime-base-aarch64.json upload/
+          fi
           if [ -f apt-repo/dists/stable/main/binary-aarch64/Packages ]; then
             cp apt-repo/dists/stable/main/binary-aarch64/Packages upload/
           fi
