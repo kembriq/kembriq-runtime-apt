@@ -72,6 +72,8 @@ jobs:
           apt-repo/scripts/patch-termux-for-kembriq.sh termux-packages
           grep -n 'TERMUX_APP__PACKAGE_NAME=' termux-packages/scripts/properties.sh
           grep -n 'TERMUX__ROOTFS=' termux-packages/scripts/properties.sh
+          grep -n 'TERMUX_PKG_DEPENDS=' termux-packages/packages/termux-tools/build.sh
+          ! grep -n 'termux-am' termux-packages/packages/termux-tools/build.sh
 
       - name: Resolve package set
         id: packages
@@ -146,14 +148,28 @@ jobs:
 
       - name: Upload build artifacts
         if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p upload
+          if [ -d termux-packages/output ]; then
+            tar -cf upload/kembriq-runtime-output.tar -C termux-packages output
+          fi
+          if [ -f termux-packages/bootstrap-aarch64.zip ]; then
+            cp termux-packages/bootstrap-aarch64.zip upload/
+          fi
+          if [ -f apt-repo/dists/stable/main/binary-aarch64/Packages ]; then
+            cp apt-repo/dists/stable/main/binary-aarch64/Packages upload/
+          fi
+          if [ -f apt-repo/dists/stable/Release ]; then
+            cp apt-repo/dists/stable/Release upload/
+          fi
+
+      - name: Upload build artifacts archive
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kembriq-runtime-aarch64-${{ github.run_id }}
-          path: |
-            termux-packages/output/*.deb
-            termux-packages/bootstrap-aarch64.zip
-            apt-repo/dists/stable/main/binary-aarch64/Packages
-            apt-repo/dists/stable/Release
+          path: upload/
           if-no-files-found: ignore
 
       - name: Commit published repo

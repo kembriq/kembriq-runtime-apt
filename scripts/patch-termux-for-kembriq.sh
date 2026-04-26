@@ -22,6 +22,7 @@ from pathlib import Path
 
 props = Path(sys.argv[1])
 repo_json = Path(sys.argv[2])
+termux_dir = props.parent.parent
 
 text = props.read_text()
 replacements = {
@@ -61,6 +62,18 @@ repo["packages"] = {
 repo.pop("root-packages", None)
 repo.pop("x11-packages", None)
 repo_json.write_text(json.dumps(repo, indent=2) + "\n")
+
+# The first Kembriq bootstrap is a headless in-app runtime, not a user-facing
+# Termux app. Keep Android intent bridges out of the MVP bootstrap because
+# they require a Gradle/Android SDK build and are not needed for apt/python/git/node.
+termux_tools = termux_dir / "packages" / "termux-tools" / "build.sh"
+if not termux_tools.exists():
+    raise SystemExit(f"Missing expected termux-tools build file: {termux_tools}")
+
+tools_text = termux_tools.read_text()
+tools_text = tools_text.replace(", termux-am (>= 0.8.0), termux-am-socket (>= 1.5.0)", "")
+tools_text = tools_text.replace('TERMUX_PKG_SUGGESTS="termux-api"', 'TERMUX_PKG_SUGGESTS=""')
+termux_tools.write_text(tools_text)
 PY
 
 echo "Patched termux-packages for com.kembriq.code."
