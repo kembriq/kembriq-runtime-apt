@@ -24,7 +24,7 @@ props = Path(sys.argv[1])
 repo_json = Path(sys.argv[2])
 termux_dir = props.parent.parent
 
-text = props.read_text()
+text = props.read_text(encoding="utf-8")
 replacements = {
     'TERMUX__NAME="Termux"': 'TERMUX__NAME="Kembriq"',
     'TERMUX__INTERNAL_NAME="termux"': 'TERMUX__INTERNAL_NAME="kembriq"',
@@ -50,9 +50,9 @@ if missing:
 for needle, replacement in replacements.items():
     text = text.replace(needle, replacement)
 
-props.write_text(text)
+props.write_text(text, encoding="utf-8")
 
-repo = json.loads(repo_json.read_text())
+repo = json.loads(repo_json.read_text(encoding="utf-8"))
 repo["packages"] = {
     "name": "kembriq-main",
     "distribution": "stable",
@@ -61,7 +61,7 @@ repo["packages"] = {
 }
 repo.pop("root-packages", None)
 repo.pop("x11-packages", None)
-repo_json.write_text(json.dumps(repo, indent=2) + "\n")
+repo_json.write_text(json.dumps(repo, indent=2) + "\n", encoding="utf-8")
 
 # The first Kembriq bootstrap is a headless in-app runtime, not a user-facing
 # Termux app. Keep Android intent bridges out of the MVP bootstrap because
@@ -70,10 +70,29 @@ termux_tools = termux_dir / "packages" / "termux-tools" / "build.sh"
 if not termux_tools.exists():
     raise SystemExit(f"Missing expected termux-tools build file: {termux_tools}")
 
-tools_text = termux_tools.read_text()
+tools_text = termux_tools.read_text(encoding="utf-8")
 tools_text = tools_text.replace(", termux-am (>= 0.8.0), termux-am-socket (>= 1.5.0)", "")
 tools_text = tools_text.replace('TERMUX_PKG_SUGGESTS="termux-api"', 'TERMUX_PKG_SUGGESTS=""')
-termux_tools.write_text(tools_text)
+termux_tools.write_text(tools_text, encoding="utf-8")
+
+bootstraps = termux_dir / "scripts" / "build-bootstraps.sh"
+if not bootstraps.exists():
+    raise SystemExit(f"Missing expected bootstrap build script: {bootstraps}")
+
+bootstrap_text = bootstraps.read_text(encoding="utf-8")
+bootstrap_text = bootstrap_text.replace(
+    '\t\tif ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then\n'
+    '\t\t\tPACKAGES+=("command-not-found")\n'
+    '\t\telse\n'
+    '\t\t\tPACKAGES+=("proot")\n'
+    '\t\tfi\n',
+    '\t\tif ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then\n'
+    '\t\t\tPACKAGES+=("proot")\n'
+    '\t\tfi\n',
+)
+for optional_package in ("ed", "debianutils", "dos2unix", "inetutils", "lsof", "nano", "net-tools", "patch"):
+    bootstrap_text = bootstrap_text.replace(f'\t\tPACKAGES+=("{optional_package}")\n', "")
+bootstraps.write_text(bootstrap_text, encoding="utf-8")
 PY
 
 echo "Patched termux-packages for com.kembriq.code."

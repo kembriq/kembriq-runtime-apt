@@ -74,6 +74,7 @@ jobs:
           grep -n 'TERMUX__ROOTFS=' termux-packages/scripts/properties.sh
           grep -n 'TERMUX_PKG_DEPENDS=' termux-packages/packages/termux-tools/build.sh
           ! grep -n 'termux-am' termux-packages/packages/termux-tools/build.sh
+          ! grep -n 'command-not-found' termux-packages/scripts/build-bootstraps.sh
 
       - name: Resolve package set
         id: packages
