@@ -81,6 +81,10 @@ if not bootstraps.exists():
 
 bootstrap_text = bootstraps.read_text(encoding="utf-8")
 bootstrap_text = bootstrap_text.replace(
+    '\t\tPACKAGES+=("bzip2")\n',
+    '\t\tPACKAGES+=("libbz2")\n',
+)
+bootstrap_text = bootstrap_text.replace(
     '\t\tif ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then\n'
     '\t\t\tPACKAGES+=("command-not-found")\n'
     '\t\telse\n'
