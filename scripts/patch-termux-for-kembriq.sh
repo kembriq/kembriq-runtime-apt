@@ -97,6 +97,38 @@ bootstrap_text = bootstrap_text.replace(
 for optional_package in ("ed", "debianutils", "dos2unix", "inetutils", "lsof", "nano", "net-tools", "patch"):
     bootstrap_text = bootstrap_text.replace(f'\t\tPACKAGES+=("{optional_package}")\n', "")
 bootstraps.write_text(bootstrap_text, encoding="utf-8")
+
+# termux-exec is part of the bootstrap and upstream includes old com.termux
+# references in comments, headers and helper scripts. Keep the scanner strict
+# by sanitizing those sources before packaging them as Kembriq artifacts.
+termux_exec = termux_dir / "packages" / "termux-exec" / "build.sh"
+if not termux_exec.exists():
+    raise SystemExit(f"Missing expected termux-exec build file: {termux_exec}")
+
+exec_text = termux_exec.read_text(encoding="utf-8")
+if "kembriq_sanitize_termux_exec_sources" not in exec_text:
+    exec_text += r'''
+
+kembriq_sanitize_termux_exec_sources() {
+	find "$TERMUX_PKG_SRCDIR" -type f \( \
+		-name '*.h' -o \
+		-name '*.c' -o \
+		-name '*.cpp' -o \
+		-name '*.sh' -o \
+		-name '*.md' -o \
+		-name '*.txt' -o \
+		-name 'termux-exec-ld-preload-lib' \
+	\) -print0 | xargs -0 -r sed -i -E \
+		-e 's|/data/data/com\.termux|/data/data/com.kembriq.code|g' \
+		-e 's|/data/user/[0-9]+/com\.termux|/data/user/0/com.kembriq.code|g' \
+		-e 's|com\.termux|com.kembriq.code|g'
+}
+
+termux_step_post_get_source() {
+	kembriq_sanitize_termux_exec_sources
+}
+'''
+termux_exec.write_text(exec_text, encoding="utf-8")
 PY
 
 echo "Patched termux-packages for com.kembriq.code."
