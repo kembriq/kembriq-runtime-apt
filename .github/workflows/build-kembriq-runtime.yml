@@ -95,7 +95,7 @@ jobs:
               packages="git python python-pip python-venv"
               ;;
             node)
-              packages="nodejs-lts"
+              packages="nodejs-lts npm"
               ;;
             all)
               packages="git python python-pip python-venv nodejs-lts curl wget tar gzip unzip ripgrep fd jq"
