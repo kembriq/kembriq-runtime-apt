@@ -75,6 +75,51 @@ tools_text = tools_text.replace(", termux-am (>= 0.8.0), termux-am-socket (>= 1.
 tools_text = tools_text.replace('TERMUX_PKG_SUGGESTS="termux-api"', 'TERMUX_PKG_SUGGESTS=""')
 termux_tools.write_text(tools_text, encoding="utf-8")
 
+# Kembriq Runtime is headless. Upstream ncurses currently downloads extra
+# terminfo sources for graphical terminal emulators, including Codeberg-hosted
+# foot sources. Those downloads are unnecessary for the in-app runtime and make
+# package builds brittle, so keep only the core ncurses and rxvt terminfo inputs.
+ncurses = termux_dir / "packages" / "ncurses" / "build.sh"
+if not ncurses.exists():
+    raise SystemExit(f"Missing expected ncurses build file: {ncurses}")
+
+ncurses_text = ncurses.read_text(encoding="utf-8")
+replacements_ncurses = {
+    '''TERMUX_PKG_VERSION=(6.6.20260307+really6.5.20250830
+                    9.31
+                    "$(. "$TERMUX_SCRIPTDIR/x11-packages/kitty/build.sh"; echo "$TERMUX_PKG_VERSION")"
+                    "$(. "$TERMUX_SCRIPTDIR/x11-packages/alacritty/build.sh"; echo "$TERMUX_PKG_VERSION")"
+                    "$(. "$TERMUX_SCRIPTDIR/x11-packages/foot/build.sh"; echo "$TERMUX_PKG_VERSION")")''':
+    '''TERMUX_PKG_VERSION=(6.6.20260307+really6.5.20250830
+                    9.31)''',
+    '''TERMUX_PKG_SRCURL=("https://github.com/ThomasDickey/ncurses-snapshots/archive/${_SNAPSHOT_COMMIT}.tar.gz"
+                   "https://dist.schmorp.de/rxvt-unicode/Attic/rxvt-unicode-${TERMUX_PKG_VERSION[1]}.tar.bz2"
+                   "$(. "$TERMUX_SCRIPTDIR/x11-packages/kitty/build.sh"; echo "$TERMUX_PKG_SRCURL")"
+                   "$(. "$TERMUX_SCRIPTDIR/x11-packages/alacritty/build.sh"; echo "$TERMUX_PKG_SRCURL")"
+                   "$(. "$TERMUX_SCRIPTDIR/x11-packages/foot/build.sh"; echo "$TERMUX_PKG_SRCURL")")''':
+    '''TERMUX_PKG_SRCURL=("https://github.com/ThomasDickey/ncurses-snapshots/archive/${_SNAPSHOT_COMMIT}.tar.gz"
+                   "https://dist.schmorp.de/rxvt-unicode/Attic/rxvt-unicode-${TERMUX_PKG_VERSION[1]}.tar.bz2")''',
+    '''TERMUX_PKG_SHA256=(28cd102efe6a2610e830cc79cf270da6ff0427b2022900a9a36d2761522f9576
+                   aaa13fcbc149fe0f3f391f933279580f74a96fd312d6ed06b8ff03c2d46672e8
+                   "$(. "$TERMUX_SCRIPTDIR/x11-packages/kitty/build.sh"; echo "$TERMUX_PKG_SHA256")"
+                   "$(. "$TERMUX_SCRIPTDIR/x11-packages/alacritty/build.sh"; echo "$TERMUX_PKG_SHA256")"
+                   "$(. "$TERMUX_SCRIPTDIR/x11-packages/foot/build.sh"; echo "$TERMUX_PKG_SHA256")")''':
+    '''TERMUX_PKG_SHA256=(28cd102efe6a2610e830cc79cf270da6ff0427b2022900a9a36d2761522f9576
+                   aaa13fcbc149fe0f3f391f933279580f74a96fd312d6ed06b8ff03c2d46672e8)''',
+    '''\tcp "$TERMUX_PKG_TMPDIR"/full-terminfo/a/{alacritty{,+common,-direct},ansi} "$TI/a/"''':
+    '''\tcp "$TERMUX_PKG_TMPDIR"/full-terminfo/a/ansi "$TI/a/"''',
+    '''\tcp "$TERMUX_PKG_TMPDIR"/full-terminfo/f/foot{,+base,-direct} "$TI/f/"\n''': '',
+    '''\tcp "$TERMUX_PKG_TMPDIR"/full-terminfo/k/kitty{,+common,-direct} "$TI/k/"\n''': '',
+    '''\ttic -x -o "$TI" "$TERMUX_PKG_SRCDIR/kitty-${TERMUX_PKG_VERSION[2]}/terminfo/kitty.terminfo"\n''': '',
+    '''\ttic -x -e alacritty,alacritty+common,alacritty-direct -o "$TI" "$TERMUX_PKG_SRCDIR/alacritty-${TERMUX_PKG_VERSION[3]}/extra/alacritty.info"\n''': '',
+    '''\n\t# Upstream instructions for building foot's terminfo\n\t# See: https://codeberg.org/dnkl/foot/src/branch/master/INSTALL.md#terminfo\n\tsed 's/@default_terminfo@/foot/g' "$TERMUX_PKG_SRCDIR/foot/foot.info" | \\\n\ttic -x -e foot,foot-direct -o "$TI" -\n''': '\n',
+}
+for old, new in replacements_ncurses.items():
+    if old not in ncurses_text:
+        raise SystemExit(f"Missing expected ncurses text to replace:\n{old}")
+    ncurses_text = ncurses_text.replace(old, new, 1)
+ncurses.write_text(ncurses_text, encoding="utf-8")
+
 bootstraps = termux_dir / "scripts" / "build-bootstraps.sh"
 if not bootstraps.exists():
     raise SystemExit(f"Missing expected bootstrap build script: {bootstraps}")
