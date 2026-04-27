@@ -107,21 +107,34 @@ if not termux_exec.exists():
 
 exec_text = termux_exec.read_text(encoding="utf-8")
 if "kembriq_sanitize_termux_exec_sources" not in exec_text:
+    post_massage_close = "\n}\n\ntermux_step_create_debscripts() {\n"
+    if post_massage_close not in exec_text:
+        raise SystemExit("Could not find termux-exec post_massage close marker")
+    exec_text = exec_text.replace(
+        post_massage_close,
+        '\n\tkembriq_sanitize_termux_exec_tree "$TERMUX_PKG_MASSAGEDIR"\n'
+        '}\n\ntermux_step_create_debscripts() {\n',
+        1,
+    )
     exec_text += r'''
 
-kembriq_sanitize_termux_exec_sources() {
-	find "$TERMUX_PKG_SRCDIR" -type f \( \
-		-name '*.h' -o \
-		-name '*.c' -o \
-		-name '*.cpp' -o \
-		-name '*.sh' -o \
-		-name '*.md' -o \
-		-name '*.txt' -o \
-		-name 'termux-exec-ld-preload-lib' \
-	\) -print0 | xargs -0 -r sed -i -E \
+kembriq_sanitize_termux_exec_tree() {
+	local root="$1"
+	local matches
+	[ -d "$root" ] || return 0
+	matches="$(mktemp)"
+	grep -R -I -l -E '(/data/data/com\.termux|/data/user/[0-9]+/com\.termux|com\.termux)' "$root" > "$matches" 2>/dev/null || true
+	if [ -s "$matches" ]; then
+		xargs -r sed -i -E \
 		-e 's|/data/data/com\.termux|/data/data/com.kembriq.code|g' \
 		-e 's|/data/user/[0-9]+/com\.termux|/data/user/0/com.kembriq.code|g' \
-		-e 's|com\.termux|com.kembriq.code|g'
+			-e 's|com\.termux|com.kembriq.code|g' < "$matches"
+	fi
+	rm -f "$matches"
+}
+
+kembriq_sanitize_termux_exec_sources() {
+	kembriq_sanitize_termux_exec_tree "$TERMUX_PKG_SRCDIR"
 }
 
 termux_step_post_get_source() {

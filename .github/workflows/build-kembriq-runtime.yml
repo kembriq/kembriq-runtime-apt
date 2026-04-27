@@ -78,6 +78,7 @@ jobs:
           grep -n 'PACKAGES+=("libbz2")' termux-packages/scripts/build-bootstraps.sh
           ! grep -n 'PACKAGES+=("bzip2")' termux-packages/scripts/build-bootstraps.sh
           grep -n 'kembriq_sanitize_termux_exec_sources' termux-packages/packages/termux-exec/build.sh
+          grep -n 'kembriq_sanitize_termux_exec_tree "$TERMUX_PKG_MASSAGEDIR"' termux-packages/packages/termux-exec/build.sh
 
       - name: Resolve package set
         id: packages
@@ -124,6 +125,20 @@ jobs:
           cd termux-packages
           read -r -a packages <<< "${{ steps.packages.outputs.packages }}"
           ./scripts/run-docker.sh ./build-package.sh -f -a aarch64 "${packages[@]}"
+
+      - name: Sanitize generated Kembriq artifacts
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          artifacts=(termux-packages/output/*.deb)
+          if [ -f termux-packages/bootstrap-aarch64.zip ]; then
+            artifacts+=(termux-packages/bootstrap-aarch64.zip)
+          fi
+          if [ "${#artifacts[@]}" -eq 0 ]; then
+            echo "No artifacts to sanitize." >&2
+            exit 1
+          fi
+          apt-repo/scripts/sanitize-kembriq-artifacts.sh "${artifacts[@]}"
 
       - name: Scan Kembriq artifacts
         if: ${{ inputs.fail_on_termux_refs }}
