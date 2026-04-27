@@ -222,5 +222,6 @@ jobs:
             echo "No APT repo changes to commit."
           else
             git commit -m "Publish Kembriq runtime packages"
+            git pull --rebase origin main
             git push
           fi
