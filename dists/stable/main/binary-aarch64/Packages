@@ -2207,6 +2207,21 @@ SHA256: 97439637c5c70856f0bc66eebf8684109c18db1a853d434f1ab216ebaae462b8
 Homepage: https://nodejs.org/
 Description: Open Source, cross-platform JavaScript runtime environment
 
+Package: npm
+Version: 11.13.0
+Architecture: all
+Maintainer: Yaksh Bariya <thunder-coding@termux.dev>
+Installed-Size: 17420
+Depends: nodejs | nodejs-lts
+Conflicts: nodejs (<= 25.3.0), nodejs-lts (<= 24.13.0)
+Filename: pool/main/npm_11.13.0_all.deb
+Size: 1949692
+MD5sum: ddadff7ff2d9be19f6206964f1fd9799
+SHA1: dd934a8ac45926bd89158fe345f248503fc9865d
+SHA256: f621e2299f62137ed612f73a49d1ace929c75d619cbdac10984faed79b0a0a2a
+Homepage: https://docs.npmjs.com/cli/
+Description: The package manager for JavaScript
+
 Package: openssl
 Version: 1:3.6.2
 Architecture: aarch64
