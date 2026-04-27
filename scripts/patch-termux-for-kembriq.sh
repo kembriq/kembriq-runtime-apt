@@ -94,6 +94,15 @@ bootstrap_text = bootstrap_text.replace(
     '\t\t\tPACKAGES+=("proot")\n'
     '\t\tfi\n',
 )
+archive_move = '\tmv -f "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" "$TERMUX_PACKAGES_DIRECTORY/"\n'
+archive_publish = (
+    '\tmkdir -p "$TERMUX_BUILT_DEBS_DIRECTORY"\n'
+    '\tcp -f "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" "$TERMUX_BUILT_DEBS_DIRECTORY/bootstrap-${1}.zip"\n'
+    '\tmv -f "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" "$TERMUX_PACKAGES_DIRECTORY/" || true\n'
+)
+if archive_move not in bootstrap_text:
+    raise SystemExit("Missing expected bootstrap archive move line")
+bootstrap_text = bootstrap_text.replace(archive_move, archive_publish, 1)
 for optional_package in ("ed", "debianutils", "dos2unix", "inetutils", "lsof", "nano", "net-tools", "patch"):
     bootstrap_text = bootstrap_text.replace(f'\t\tPACKAGES+=("{optional_package}")\n', "")
 bootstraps.write_text(bootstrap_text, encoding="utf-8")
