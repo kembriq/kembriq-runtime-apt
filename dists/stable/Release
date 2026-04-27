@@ -1,11 +1,18 @@
-Origin: KembriqCode
+Origin: Kembriq
 Label: Kembriq Runtime
 Suite: stable
 Codename: stable
+Version: 1.0
 Architectures: aarch64
 Components: main
-Description: Kembriq Runtime curated apt repository
+Description: Kembriq Runtime package repository
+Date: Mon, 27 Apr 2026 05:38:00 +0000
+MD5Sum:
+ 327408c39a9a0438197cdac0a1735d9e            96776 main/binary-aarch64/Packages
+ 1e039871e49d92f6e3f72ceea02ec2e1            31482 main/binary-aarch64/Packages.gz
+SHA1:
+ 25805946660eaea31e264ed51c548983c65898b4            96776 main/binary-aarch64/Packages
+ 0b27a9ec1b1ee8a3be43ac5524de8eb8ae6b285b            31482 main/binary-aarch64/Packages.gz
 SHA256:
- 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b 1 main/binary-aarch64/Packages
- edca562dcbd7fbfc613d6b77f550cf95c96a1f30d99fb4f7105f020dc3f0d073 21 main/binary-aarch64/Packages.gz
-
+ 74e0de8d61988eb6c34c6ede14bd54f3ffda401dfa044b759ed17de2827ffdfc            96776 main/binary-aarch64/Packages
+ fb9042a86e47785faf0f8f18dc3dd98b784552dde056667129b8b2b64853f020            31482 main/binary-aarch64/Packages.gz
