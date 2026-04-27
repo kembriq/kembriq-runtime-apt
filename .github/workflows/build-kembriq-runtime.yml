@@ -116,7 +116,23 @@ jobs:
         run: |
           set -euo pipefail
           cd termux-packages
+          mkdir -p output
+          sudo chmod -R a+rwX .
           ./scripts/run-docker.sh ./scripts/build-bootstraps.sh --architectures aarch64
+
+      - name: Collect bootstrap base
+        if: ${{ inputs.build_bootstrap }}
+        run: |
+          set -euo pipefail
+          candidate="$(find termux-packages -maxdepth 4 -type f -name 'bootstrap-aarch64.zip' -print -quit || true)"
+          if [ -z "$candidate" ]; then
+            echo "bootstrap-aarch64.zip was not produced." >&2
+            exit 1
+          fi
+          if [ "$candidate" != "termux-packages/bootstrap-aarch64.zip" ]; then
+            cp -f "$candidate" termux-packages/bootstrap-aarch64.zip
+          fi
+          test -s termux-packages/bootstrap-aarch64.zip
 
       - name: Build selected packages
         if: ${{ steps.packages.outputs.packages != '' }}
