@@ -1,0 +1,16 @@
+{
+  "id": "kembriq-runtime-base",
+  "version": "2026.04.27.153023",
+  "abi": "arm64-v8a",
+  "packageName": "com.kembriq.code",
+  "prefix": "/data/data/com.kembriq.code/files/usr",
+  "format": "termux-bootstrap-zip",
+  "url": "https://github.com/kembriq/kembriq-runtime-apt/releases/download/runtime-base-25000689560/kembriq-runtime-base-aarch64.zip",
+  "sha256": "2a2d1b08a2457733d2cd453c828cd5d88b4dd1057076fe8d693fa1aaac27a5f5",
+  "sizeBytes": 137441448,
+  "expectedFiles": [
+    "bin/apt",
+    "bin/dpkg",
+    "bin/bash"
+  ]
+}
