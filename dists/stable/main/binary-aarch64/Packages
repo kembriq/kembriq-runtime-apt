@@ -2333,10 +2333,10 @@ Installed-Size: 17420
 Depends: nodejs | nodejs-lts
 Conflicts: nodejs (<= 25.3.0), nodejs-lts (<= 24.13.0)
 Filename: pool/main/npm_11.13.0_all.deb
-Size: 1949692
-MD5sum: ddadff7ff2d9be19f6206964f1fd9799
-SHA1: dd934a8ac45926bd89158fe345f248503fc9865d
-SHA256: f621e2299f62137ed612f73a49d1ace929c75d619cbdac10984faed79b0a0a2a
+Size: 1949672
+MD5sum: 8d771caf096c3c69ecfddf6a86207309
+SHA1: ab8e79e54f34352c699d4f82af4d3bcfe14ca6dc
+SHA256: 1a9995212b085882c3a65ad616af842593830efe8ad8e767d1e9a8bcfc33c637
 Homepage: https://docs.npmjs.com/cli/
 Description: The package manager for JavaScript
 
