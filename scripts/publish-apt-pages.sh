@@ -9,6 +9,7 @@ fi
 repo_root="$(realpath "$1")"
 debs_dir="$(realpath "$2")"
 bootstrap_zip="$3"
+bootstrap_url="${KEMBRIQ_BOOTSTRAP_URL:-}"
 
 pool_dir="$repo_root/pool/main"
 binary_dir="$repo_root/dists/stable/main/binary-aarch64"
@@ -25,9 +26,17 @@ else
 fi
 
 if [ -n "$bootstrap_zip" ] && [ -f "$bootstrap_zip" ]; then
-  cp -f "$bootstrap_zip" "$bootstrap_dir/kembriq-runtime-base-aarch64.zip"
-  bootstrap_sha256="$(sha256sum "$bootstrap_dir/kembriq-runtime-base-aarch64.zip" | awk '{print $1}')"
-  bootstrap_size="$(stat -c%s "$bootstrap_dir/kembriq-runtime-base-aarch64.zip")"
+  if [ -z "$bootstrap_url" ] && [ -n "${GITHUB_REPOSITORY:-}" ] && [ -n "${GITHUB_RUN_ID:-}" ]; then
+    bootstrap_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/runtime-base-${GITHUB_RUN_ID}/kembriq-runtime-base-aarch64.zip"
+  fi
+  if [ -z "$bootstrap_url" ]; then
+    echo "KEMBRIQ_BOOTSTRAP_URL is required when publishing a bootstrap manifest." >&2
+    echo "Bootstrap archives are too large for Git history; publish the zip as a Release asset first." >&2
+    exit 64
+  fi
+
+  bootstrap_sha256="$(sha256sum "$bootstrap_zip" | awk '{print $1}')"
+  bootstrap_size="$(stat -c%s "$bootstrap_zip")"
   bootstrap_version="$(date -u +%Y.%m.%d.%H%M%S)"
   echo "$bootstrap_sha256  kembriq-runtime-base-aarch64.zip" > "$bootstrap_dir/kembriq-runtime-base-aarch64.zip.sha256"
   cat > "$bootstrap_dir/kembriq-runtime-base-aarch64.json" <<EOF
@@ -38,7 +47,7 @@ if [ -n "$bootstrap_zip" ] && [ -f "$bootstrap_zip" ]; then
   "packageName": "com.kembriq.code",
   "prefix": "/data/data/com.kembriq.code/files/usr",
   "format": "termux-bootstrap-zip",
-  "url": "https://kembriq.github.io/kembriq-runtime-apt/artifacts/bootstrap/kembriq-runtime-base-aarch64.zip",
+  "url": "$bootstrap_url",
   "sha256": "$bootstrap_sha256",
   "sizeBytes": $bootstrap_size,
   "expectedFiles": ["bin/apt", "bin/dpkg", "bin/bash"]
