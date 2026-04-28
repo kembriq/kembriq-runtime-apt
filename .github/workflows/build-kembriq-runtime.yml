@@ -19,10 +19,10 @@ on:
         required: false
         default: ""
       build_bootstrap:
-        description: "Build kembriq-runtime-base bootstrap zip"
+        description: "Build kembriq-runtime-base bootstrap zip (slow; enable only for bootstrap/patch changes)"
         required: true
         type: boolean
-        default: true
+        default: false
       publish_pages:
         description: "Commit built .deb files and APT metadata to GitHub Pages"
         required: true
@@ -38,8 +38,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: kembriq-runtime-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.package_set }}
+  cancel-in-progress: true
 
 jobs:
   build-aarch64:
